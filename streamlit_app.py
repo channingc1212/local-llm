@@ -3,10 +3,11 @@ import requests
 import os
 from typing import List, Dict
 
-# Constants
+# Constants, set up the Ollama API endpoint and model name
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "deepseek-r1:7b"
 
+# Function to generate a response from the LLM
 def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
     """Generate a response from the LLM"""
     # Combine conversation history into a single prompt
