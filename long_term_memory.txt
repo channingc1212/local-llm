@@ -22,3 +22,8 @@
 10. **Stay Motivated**: Remember why you love basketball. Keep playing because the thrill of competition is worth it.
 
 If you're over 50, consider joining leagues or events where age isn't a barrier. Focus on enjoying the game and improving your skills rather than just competing for rankings. Good luck!
+2025-02-01 18:48:58 - User: can cursor or windsurf (AI coding assistant) do unit testing with their agent mode?
+2025-02-01 18:48:58 - Assistant: Based on the analysis, Cursor and Windsurf do not currently support unit testing while an agent mode is active due to potential issues such as interference from multiple simultaneous interactions, unpredictable results, resource constraints, and the need for a controlled environment. To perform effective unit testing, it may require specific configurations or isolated testing environments that are not standard features of these tools.
+
+**Answer:**  
+Cursor and Windsurf do not currently support unit testing while an agent mode is active due to potential issues with interference, unpredictability, resource constraints, and the need for a controlled environment. Testing may require specific configurations or isolated environments beyond their standard features.

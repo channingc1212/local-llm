@@ -4,6 +4,7 @@ import os
 import re
 from typing import List, Dict
 from datetime import datetime
+import time
 
 # Constants, set up the Ollama API endpoint and model name
 OLLAMA_URL = "http://localhost:11434/api/generate" # local endpoint for the Ollama API
@@ -36,6 +37,8 @@ def clean_assistant_response(response: str) -> str:
 # Function to generate a response from the LLM
 def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
     """Generate a response from the LLM"""
+    start_time = time.time()  # Start timing
+    
     # Combine conversation history into a single prompt
     combined_prompt = ""
     for msg in history:
@@ -56,6 +59,7 @@ def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
             return "Error: Could not connect to Ollama. Please ensure the Ollama service is running."
 
         # Send the API request to Ollama
+        api_start_time = time.time()  # Start API timing
         response = requests.post(
             OLLAMA_URL,
             json={
@@ -71,6 +75,7 @@ def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
             },
             timeout=120
         )
+        api_end_time = time.time()  # End API timing
         
         # Parse the response
         response.raise_for_status()
@@ -83,6 +88,12 @@ def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
         if not response_text:
             return "I apologize, but I couldn't generate a response. Please try again."
             
+        # Calculate and display timing
+        total_time = time.time() - start_time
+        api_time = api_end_time - api_start_time
+        st.sidebar.markdown(f"**Response Time:** {total_time:.2f} seconds")
+        st.sidebar.markdown(f"**API Call Time:** {api_time:.2f} seconds")
+        
         # Return the response text    
         return response_text
 
