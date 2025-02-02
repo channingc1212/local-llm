@@ -1,11 +1,37 @@
 import streamlit as st
 import requests
 import os
+import re
 from typing import List, Dict
+from datetime import datetime
 
 # Constants, set up the Ollama API endpoint and model name
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "deepseek-r1:7b"
+OLLAMA_URL = "http://localhost:11434/api/generate" # local endpoint for the Ollama API
+MODEL_NAME = "deepseek-r1:7b" # model name
+
+# Long-Term Memory helper functions
+LONG_TERM_MEMORY_FILE = "long_term_memory.txt"
+
+def load_long_term_memory() -> str:
+    """Load long-term memory from a text file if it exists."""
+    import os
+    if os.path.exists(LONG_TERM_MEMORY_FILE):
+        with open(LONG_TERM_MEMORY_FILE, "r") as f:
+            return f.read()
+    return ""
+
+def append_to_long_term_memory(text: str) -> None:
+    """Append new conversation to the long-term memory file."""
+    with open(LONG_TERM_MEMORY_FILE, "a") as f:
+        f.write(text + "\n")
+
+# New helper function to clean assistant response by removing reasoning parts
+def clean_assistant_response(response: str) -> str:
+    """Remove text between '<think>' and '</think>' markers from the assistant response."""
+    import re
+    # Use regex to remove text between <think> and </think>
+    cleaned_response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL).strip()
+    return cleaned_response
 
 # Function to generate a response from the LLM
 def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
@@ -17,6 +43,11 @@ def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
         combined_prompt += f"{role_prefix}{msg['content']}\n"
     combined_prompt += f"User: {prompt}\nAssistant:"
 
+    # Prepend long-term memory if available
+    long_term = load_long_term_memory()
+    if long_term:
+        combined_prompt = "Long-Term Memory:\n" + long_term + "\n" + combined_prompt
+    
     try:
         # Check if Ollama is running
         try:
@@ -24,13 +55,14 @@ def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
         except requests.exceptions.RequestException:
             return "Error: Could not connect to Ollama. Please ensure the Ollama service is running."
 
+        # Send the API request to Ollama
         response = requests.post(
             OLLAMA_URL,
             json={
                 "model": MODEL_NAME,
                 "prompt": combined_prompt,
                 "stream": False,
-                "system": "You are a helpful AI assistant. Provide clear and concise responses.",
+                "system": "You are a helpful AI assistant. Provide clear and concise responses. Clarify any unclear or ambiguous information.",
                 "options": {
                     "temperature": 0.7,
                     "top_p": 0.9,
@@ -40,19 +72,18 @@ def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
             timeout=120
         )
         
-        if response.status_code == 404:
-            return f"Error: Model '{MODEL_NAME}' not found. Please ensure you have downloaded it using 'ollama pull {MODEL_NAME}'"
-        
+        # Parse the response
         response.raise_for_status()
-        
         result = response.json()
         if "error" in result:
             return f"Ollama Error: {result['error']}"
         
+        # Extract the response text
         response_text = result.get("response", "").strip()
         if not response_text:
             return "I apologize, but I couldn't generate a response. Please try again."
             
+        # Return the response text    
         return response_text
 
     except requests.exceptions.Timeout:
@@ -62,14 +93,14 @@ def generate_response(prompt: str, history: List[Dict[str, str]]) -> str:
     except Exception as e:
         return f"An unexpected error occurred: {str(e)}"
 
-# Page configuration
+# Below are the Streamlit app configuration
 st.set_page_config(
     page_title="Local LLM Chat",
     page_icon="🤖",
-    layout="wide"
+    layout="centered",
+    initial_sidebar_state="auto"
 )
 
-# Title and description
 st.title("🤖 Local LLM Chat")
 st.markdown("Chat with deepseek-r1:7b model served through Ollama")
 
@@ -94,6 +125,13 @@ if prompt := st.chat_input("What's on your mind?"):
         with st.spinner("Thinking..."):
             assistant_response = generate_response(prompt, st.session_state.messages)
             st.markdown(assistant_response)
-            st.session_state.messages.append(
-                {"role": "assistant", "content": assistant_response}
-            )
+            # Get current timestamp
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Clean the assistant response to remove any reasoning part
+            cleaned_response = clean_assistant_response(assistant_response)
+            # Append the conversation with timestamp to long-term memory
+            conversation_entry = f"{timestamp} - User: {prompt}\n{timestamp} - Assistant: {cleaned_response}"
+            append_to_long_term_memory(conversation_entry)
+            st.session_state.messages.append({
+                "role": "assistant", "content": assistant_response
+            })
