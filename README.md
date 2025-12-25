@@ -43,6 +43,30 @@ streamlit run streamlit_app.py
 
 4. Type your message in the input box and press Enter to chat with the model.
 
+### Download additional models for offline use
+
+Before disconnecting from the internet, you can cache more Ollama models locally:
+
+```bash
+# See which models are already available on your machine
+ollama list
+
+# Download another model (example)
+ollama pull llama3.1:8b
+```
+
+Each `ollama pull` stores the weights on disk so they remain usable offline. Swap the model name as needed (`ollama list` shows the exact tags).
+
+### Direct terminal chat (offline)
+
+If you prefer to talk to the locally cached model from the command line, you can run:
+
+```bash
+ollama run deepseek-r1:7b
+```
+
+This uses the Ollama runtime and the weights you already downloaded, so no internet connection is required. Replace `deepseek-r1:7b` with another model name if you have pulled additional models.
+
 ## Features
 
 - Clean and simple chat interface
